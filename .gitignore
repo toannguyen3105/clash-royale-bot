@@ -4,3 +4,8 @@ __pycache__/
 screen.png
 .DS_Store
 .env
+logs/
+assets/debug/
+*.log
+.coverage
+htmlcov/

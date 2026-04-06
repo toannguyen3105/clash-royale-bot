@@ -42,5 +42,18 @@ clean:
 	@echo "[+] Cleaning temporary files and environment..."
 	rm -rf $(VENV)
 	rm -rf $(SCREENSHOT_DIR)
+	rm -rf logs/
 	rm -rf __pycache__ $(TEST_DIR)__pycache__
+	rm -f .coverage
+	rm -rf htmlcov/
 	@echo "[V] Cleanup complete!"
+
+# 6. Code Coverage
+cov:
+	@echo "[+] Running tests with coverage report..."
+	@$(PYTHON) -m pytest --cov=. --cov-report=term-missing
+
+cov-html:
+	@echo "[+] Generating HTML coverage report..."
+	@$(PYTHON) -m pytest --cov=. --cov-report=html
+	@echo "[V] HTML report generated in htmlcov/index.html"

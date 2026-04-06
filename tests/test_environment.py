@@ -1,10 +1,8 @@
 import os
 import pytest
 import subprocess
-from dotenv import load_dotenv
-
-# Load configuration for tests
-load_dotenv()
+from config import config
+from vision.detector import Detector
 
 def test_python_libraries():
     """Verify that required Python libraries are installed."""
@@ -12,26 +10,30 @@ def test_python_libraries():
         import cv2
         import numpy
         import dotenv
-        print("\n[V] Python libraries (cv2, numpy, dotenv) are ready.")
+        print("\n[V] Core Python libraries (cv2, numpy, dotenv) are ready.")
     except ImportError as e:
         pytest.fail(f"Missing Python library: {e}. Please run 'make setup'.")
 
 def test_required_assets():
-    """Verify the existence of required template files from .env."""
-    battle_button_path = os.getenv("TEMPLATE_PATH", "assets/templates/battle_button.png")
+    """Verify the existence of required template files using the config module."""
+    battle_button_path = config.TEMPLATE_PATH
     
-    required_files = [
-        battle_button_path,
-    ]
-    for file_path in required_files:
-        assert os.path.exists(file_path), f"Missing critical file: {file_path}"
-    print("\n[V] All required assets are present.")
+    assert battle_button_path, "TEMPLATE_PATH is not defined in config."
+    assert os.path.exists(battle_button_path), f"Missing critical asset: {battle_button_path}"
+    print(f"\n[V] Configured asset found: {battle_button_path}")
+
+def test_config_loading():
+    """Verify that configuration is correctly loaded from .env or defaults."""
+    assert config.PACKAGE_NAME is not None
+    assert isinstance(config.THRESHOLD, float)
+    print("\n[V] Configuration loaded successfully.")
 
 def test_adb_installed():
     """Verify that ADB tool is installed in the system."""
     try:
+        # We use a simple command to check adb availability
         result = subprocess.run(["adb", "--version"], capture_output=True, text=True)
-        assert result.returncode == 0, "ADB command is not working."
-        print(f"\n[V] ADB is installed: {result.stdout.splitlines()[0]}")
+        assert result.returncode == 0, "ADB command is not responding correctly."
+        print(f"\n[V] ADB is active: {result.stdout.splitlines()[0]}")
     except FileNotFoundError:
-        pytest.fail("ADB command not found. Please install Android SDK Platform Tools.")
+        pytest.fail("ADB command not found in the system PATH.")
