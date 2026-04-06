@@ -3,32 +3,38 @@ VENV = venv
 PYTHON = $(VENV)/bin/python3
 PIP = $(VENV)/bin/pip
 
-.PHONY: setup run screenshot clean
+.PHONY: setup run screenshot test clean
 
-# 1. Cài đặt môi trường
+# 1. Environment Setup
 setup:
-	@echo "[+] Đang cài đặt công cụ hệ thống (adb, scrcpy)..."
+	@echo "[+] Installing system tools (adb, scrcpy)..."
 	sudo apt update && sudo apt install -y adb scrcpy
-	@echo "[+] Đang tạo môi trường ảo Python (venv)..."
+	@echo "[+] Creating Python virtual environment (venv)..."
 	python3 -m venv $(VENV)
-	@echo "[+] Đang cài đặt các thư viện Python..."
+	@echo "[+] Installing Python libraries..."
 	$(PIP) install -r requirements.txt
-	@echo "[V] Đã thiết lập xong!"
+	$(PIP) install pytest
+	@echo "[V] Setup complete!"
 
-# 2. Chạy bot
+# 2. Run Bot
 run:
-	@echo "[+] Đang khởi động bot..."
+	@echo "[+] Starting bot..."
 	$(PYTHON) main.py
 
-# 3. Chụp ảnh màn hình thủ công (để lấy mẫu)
-screenshot:
-	@echo "[+] Đang chụp ảnh màn hình điện thoại..."
-	adb exec-out screencap -p > screen.png
-	@echo "[V] Đã lưu vào screen.png"
+# 3. Environment Check (Test)
+test:
+	@echo "[+] Running system checks..."
+	$(VENV)/bin/pytest -v tests/
 
-# 4. Dọn dẹp
+# 4. Manual Screenshot (for template creation)
+screenshot:
+	@echo "[+] Capturing phone screenshot..."
+	adb exec-out screencap -p > screen.png
+	@echo "[V] Saved to screen.png"
+
+# 5. Cleanup
 clean:
-	@echo "[+] Đang dọn dẹp..."
+	@echo "[+] Cleaning up..."
 	rm -rf $(VENV)
 	rm -f screen.png
-	@echo "[V] Đã dọn sạch!"
+	@echo "[V] Cleanup complete!"

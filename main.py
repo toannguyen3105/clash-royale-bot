@@ -4,69 +4,68 @@ import os
 import subprocess
 import time
 
-# Cấu hình
+# Configuration
 PACKAGE_NAME = "com.supercell.clashroyale"
 TEMPLATE_PATH = "assets/templates/battle_button.png"
 SCREENSHOT_PATH = "screen.png"
-THRESHOLD = 0.8  # Độ chính xác tối thiểu (80%)
+THRESHOLD = 0.8  # Minimum accuracy threshold
 
 def unlock_device():
-    print("[+] Đang kiểm tra trạng thái màn hình...")
-    # Kiểm tra xem màn hình có đang tắt không
+    print("[+] Checking screen state...")
+    # Check if the screen is OFF
     res = subprocess.run(["adb", "shell", "dumpsys", "display"], capture_output=True, text=True)
     if "mScreenState=OFF" in res.stdout or "state=OFF" in res.stdout:
-        print("[*] Màn hình đang tắt. Đang bật nguồn...")
-        subprocess.run(["adb", "shell", "input", "keyevent", "26"]) # Nút Nguồn
+        print("[*] Screen is OFF. Pressing Power button...")
+        subprocess.run(["adb", "shell", "input", "keyevent", "26"]) # Power button
     
-    # Vuốt lên để mở khóa (giả định không có mật khẩu hoặc chỉ là vuốt để mở)
-    print("[*] Đang vuốt để mở khóa...")
+    # Swipe up to unlock (assumes no password or just swipe-to-unlock)
+    print("[*] Swiping up to unlock...")
     subprocess.run(["adb", "shell", "input", "swipe", "500", "2000", "500", "500"])
     time.sleep(1)
 
 def launch_game():
     unlock_device()
-    print(f"[+] Đang khởi động {PACKAGE_NAME}...")
+    print(f"[+] Starting {PACKAGE_NAME}...")
     subprocess.run(["adb", "shell", "monkey", "-p", PACKAGE_NAME, "-c", "android.intent.category.LAUNCHER", "1"], capture_output=True)
-    print("[*] Đang đợi game load (20 giây)...")
-    time.sleep(20)  # Tăng thời gian chờ lên 20s cho chắc chắn
+    print("[*] Waiting for game to load (20 seconds)...")
+    time.sleep(20)  # Increase wait time for Clash Royale to fully load
 
 def capture_screen():
-    print("[+] Đang chụp ảnh màn hình...")
-    # Dùng adb exec-out để lấy ảnh trực tiếp vào Python hoặc lưu tạm ra file
+    print("[+] Capturing screenshot...")
     subprocess.run(f"adb exec-out screencap -p > {SCREENSHOT_PATH}", shell=True)
 
 def check_login():
     if not os.path.exists(TEMPLATE_PATH):
-        print(f"[-] Lỗi: Không tìm thấy file mẫu tại {TEMPLATE_PATH}")
+        print(f"[-] Error: Template file not found at {TEMPLATE_PATH}")
         return False
 
-    # Đọc ảnh màn hình và ảnh mẫu
+    # Load screen and template
     screen = cv2.imread(SCREENSHOT_PATH)
     template = cv2.imread(TEMPLATE_PATH)
 
     if screen is None or template is None:
-        print("[-] Lỗi: Không thể đọc ảnh.")
+        print("[-] Error: Could not read images.")
         return False
 
-    # So khớp mẫu (Template Matching)
+    # Template Matching
     res = cv2.matchTemplate(screen, template, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
 
-    print(f"[*] Độ khớp tối đa: {max_val:.2f}")
+    print(f"[*] Max match value: {max_val:.2f}")
 
     if max_val >= THRESHOLD:
-        print("[V] XÁC NHẬN: Bạn đã đăng nhập và đang ở màn hình chính (Lobby).")
+        print("[V] CONFIRMED: You are logged in and at the Lobby.")
         return True
     else:
-        print("[X] CẢNH BÁO: Không tìm thấy nút 'Battle'. Có thể bạn chưa đăng nhập hoặc đang ở màn hình khác.")
+        print("[X] WARNING: 'Battle' button not found. You might not be logged in or at a different screen.")
         return False
 
 if __name__ == "__main__":
-    # 1. Mở game
+    # 1. Launch the game
     launch_game()
     
-    # 2. Chụp ảnh
+    # 2. Capture the screen
     capture_screen()
     
-    # 3. Kiểm tra
+    # 3. Check status
     check_login()
