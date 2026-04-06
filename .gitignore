@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 screen.png
 .DS_Store
+.env

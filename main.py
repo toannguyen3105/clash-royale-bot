@@ -3,12 +3,16 @@ import numpy as np
 import os
 import subprocess
 import time
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configuration
-PACKAGE_NAME = "com.supercell.clashroyale"
-TEMPLATE_PATH = "assets/templates/battle_button.png"
-SCREENSHOT_PATH = "screen.png"
-THRESHOLD = 0.8  # Minimum accuracy threshold
+PACKAGE_NAME = os.getenv("PACKAGE_NAME", "com.supercell.clashroyale")
+TEMPLATE_PATH = os.getenv("TEMPLATE_PATH", "assets/templates/battle_button.png")
+SCREENSHOT_PATH = os.getenv("SCREENSHOT_PATH", "assets/debug/screen.png")
+THRESHOLD = float(os.getenv("THRESHOLD", 0.8))
 
 def unlock_device():
     print("[+] Checking screen state...")
@@ -32,6 +36,7 @@ def launch_game():
 
 def capture_screen():
     print("[+] Capturing screenshot...")
+    os.makedirs(os.path.dirname(SCREENSHOT_PATH), exist_ok=True)
     subprocess.run(f"adb exec-out screencap -p > {SCREENSHOT_PATH}", shell=True)
 
 def check_login():
@@ -60,12 +65,17 @@ def check_login():
         print("[X] WARNING: 'Battle' button not found. You might not be logged in or at a different screen.")
         return False
 
-if __name__ == "__main__":
-    # 1. Launch the game
-    launch_game()
+def main():
+    """Simple bot execution: Launch and check login."""
+    print("--- Clash Royale Login Check ---")
     
-    # 2. Capture the screen
+    launch_game()
     capture_screen()
     
-    # 3. Check status
-    check_login()
+    if check_login():
+        print("[V] SUCCESS: Game is logged in and at the Lobby.")
+    else:
+        print("[X] FAILED: Could not confirm login status. Check your screen.")
+
+if __name__ == "__main__":
+    main()

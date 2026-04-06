@@ -1,20 +1,27 @@
 import os
 import pytest
 import subprocess
+from dotenv import load_dotenv
+
+# Load configuration for tests
+load_dotenv()
 
 def test_python_libraries():
     """Verify that required Python libraries are installed."""
     try:
         import cv2
         import numpy
-        print("\n[V] Python libraries (cv2, numpy) are ready.")
+        import dotenv
+        print("\n[V] Python libraries (cv2, numpy, dotenv) are ready.")
     except ImportError as e:
         pytest.fail(f"Missing Python library: {e}. Please run 'make setup'.")
 
 def test_required_assets():
-    """Verify the existence of required template files."""
+    """Verify the existence of required template files from .env."""
+    battle_button_path = os.getenv("TEMPLATE_PATH", "assets/templates/battle_button.png")
+    
     required_files = [
-        "assets/templates/battle_button.png",
+        battle_button_path,
     ]
     for file_path in required_files:
         assert os.path.exists(file_path), f"Missing critical file: {file_path}"
