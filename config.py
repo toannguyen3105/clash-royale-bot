@@ -11,6 +11,9 @@ class Config:
     SCREENSHOT_PATH = os.getenv("SCREENSHOT_PATH", "assets/debug/screen.png")
     LOG_FILE = os.getenv("LOG_FILE", "bot.log")
     THRESHOLD = float(os.getenv("THRESHOLD", 0.8))
+    DEVICE_SERIAL = os.getenv("DEVICE_SERIAL", "")
+    DEVICE_PIN = os.getenv("DEVICE_PIN", "")
+    DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 
 # Global config instance
 config = Config()
