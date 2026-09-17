@@ -4,6 +4,14 @@ import os
 import re
 from utils.logger import logger
 from config import config
+from constants import (
+    KEYCODE_POWER,
+    KEYCODE_ENTER,
+    POST_POWER_BUTTON_DELAY_SECONDS,
+    POST_SWIPE_DELAY_SECONDS,
+    POST_PIN_ENTRY_DELAY_SECONDS,
+    GAME_LOAD_WAIT_SECONDS,
+)
 
 class ADBInterface:
     """Handles all interaction with the Android device via ADB."""
@@ -79,8 +87,8 @@ class ADBInterface:
         res = subprocess.run(ADBInterface._base_cmd() + ["shell", "dumpsys", "display"], capture_output=True, text=True)
         if "mScreenState=OFF" in res.stdout or "state=OFF" in res.stdout:
             logger.info("Screen is OFF. Pressing Power button...")
-            subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "keyevent", "26"])
-            time.sleep(1)
+            subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "keyevent", KEYCODE_POWER])
+            time.sleep(POST_POWER_BUTTON_DELAY_SECONDS)
 
         if not ADBInterface.is_device_locked():
             logger.info("Device is already unlocked, skipping swipe/PIN.")
@@ -88,13 +96,13 @@ class ADBInterface:
 
         logger.info("Swiping up to unlock...")
         subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "swipe", "500", "2000", "500", "500"])
-        time.sleep(1)
+        time.sleep(POST_SWIPE_DELAY_SECONDS)
 
         if config.DEVICE_PIN:
             logger.info("Entering PIN to unlock...")
             subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "text", config.DEVICE_PIN])
-            subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "keyevent", "66"])  # Enter, confirms the PIN
-            time.sleep(1)
+            subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "keyevent", KEYCODE_ENTER])
+            time.sleep(POST_PIN_ENTRY_DELAY_SECONDS)
 
     @staticmethod
     def launch_app(package_name):
@@ -106,8 +114,8 @@ class ADBInterface:
 
         logger.info(f"Starting {package_name}...")
         subprocess.run(ADBInterface._base_cmd() + ["shell", "monkey", "-p", package_name, "-c", "android.intent.category.LAUNCHER", "1"], capture_output=True)
-        logger.info("Waiting for game to load (20 seconds)...")
-        time.sleep(20)
+        logger.info(f"Waiting for game to load ({GAME_LOAD_WAIT_SECONDS} seconds)...")
+        time.sleep(GAME_LOAD_WAIT_SECONDS)
 
     @staticmethod
     def capture_screen(output_path):

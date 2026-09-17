@@ -3,6 +3,7 @@ from core.adb import ADBInterface
 from vision.detector import Detector
 from utils.logger import logger
 from config import config
+from constants import LOBBY_NAV_SETTLE_SECONDS
 
 # Bottom nav "Battle" icon, used to back out of other screens (e.g. Shop) to the Lobby.
 # Tied to the current device's resolution (1080x2400), same as the vision templates.
@@ -20,6 +21,6 @@ def ensure_at_lobby():
             return True
         logger.info(f"Not at Lobby yet, tapping Battle nav icon (attempt {attempt}/{MAX_LOBBY_RETURN_ATTEMPTS})...")
         ADBInterface.tap(*BATTLE_NAV_ICON)
-        time.sleep(2)
+        time.sleep(LOBBY_NAV_SETTLE_SECONDS)
 
     return False
