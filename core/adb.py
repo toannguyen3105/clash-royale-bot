@@ -121,10 +121,16 @@ class ADBInterface:
     def capture_screen(output_path):
         logger.info(f"Capturing screenshot to {output_path}...")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        cmd = " ".join(ADBInterface._base_cmd())
-        subprocess.run(f"{cmd} exec-out screencap -p > {output_path}", shell=True)
+        result = subprocess.run(ADBInterface._base_cmd() + ["exec-out", "screencap", "-p"], capture_output=True)
+        with open(output_path, "wb") as f:
+            f.write(result.stdout)
 
     @staticmethod
     def tap(x, y):
         logger.info(f"Tapping at ({x}, {y})")
         subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "tap", str(x), str(y)])
+
+    @staticmethod
+    def swipe(x1, y1, x2, y2, duration_ms=300):
+        logger.info(f"Swiping from ({x1}, {y1}) to ({x2}, {y2})")
+        subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "swipe", str(x1), str(y1), str(x2), str(y2), str(duration_ms)])

@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open
 from core.adb import ADBInterface
 from config import config
 
@@ -223,16 +223,31 @@ def test_launch_app(mock_subprocess, mock_sleep):
         assert any("monkey" in cmd and "com.test.app" in cmd for cmd in calls)
 
 def test_capture_screen(mock_subprocess, mock_os):
-    """Test capture_screen creates dir and runs screencap."""
-    ADBInterface.capture_screen("path/to/screen.png")
-    
+    """Test capture_screen creates dir, runs screencap, and writes the raw PNG bytes to file."""
+    mock_subprocess.return_value = MagicMock(stdout=b"PNGDATA")
+
+    with patch("builtins.open", mock_open()) as m_open:
+        ADBInterface.capture_screen("path/to/screen.png")
+
     mock_os.assert_called_once_with("path/to", exist_ok=True)
-    # Verify screencap command
-    # Note: subprocess.run is called with shell=True for this specific command
-    mock_subprocess.assert_called_with("adb exec-out screencap -p > path/to/screen.png", shell=True)
+    mock_subprocess.assert_called_with(["adb", "exec-out", "screencap", "-p"], capture_output=True)
+    m_open.assert_called_once_with("path/to/screen.png", "wb")
+    m_open().write.assert_called_with(b"PNGDATA")
 
 def test_tap(mock_subprocess):
     """Test tap calls input tap with correct coords."""
     ADBInterface.tap(100, 200)
-    
+
     mock_subprocess.assert_called_with(["adb", "shell", "input", "tap", "100", "200"])
+
+def test_swipe(mock_subprocess):
+    """Test swipe calls input swipe with correct coords and duration."""
+    ADBInterface.swipe(100, 200, 300, 400)
+
+    mock_subprocess.assert_called_with(["adb", "shell", "input", "swipe", "100", "200", "300", "400", "300"])
+
+def test_swipe_custom_duration(mock_subprocess):
+    """Test swipe forwards a custom duration_ms."""
+    ADBInterface.swipe(100, 200, 300, 400, duration_ms=800)
+
+    mock_subprocess.assert_called_with(["adb", "shell", "input", "swipe", "100", "200", "300", "400", "800"])

@@ -14,8 +14,11 @@ def setup_logger(name="bot", level=logging.INFO):
 
     logger = logging.getLogger(name)
     
-    # Prevet duplicate handlers if the logger was already initialized
-    if logger.hasHandlers():
+    # Prevent duplicate handlers if the logger was already initialized.
+    # Checking logger.handlers (not hasHandlers()) so an ancestor logger (e.g. root,
+    # which pytest and other tools may attach a handler to) doesn't cause this to
+    # skip setup for a "bot" logger that has no handlers of its own yet.
+    if logger.handlers:
         return logger
 
     logger.setLevel(level)

@@ -47,3 +47,17 @@ CLAIM_CONFIRM_DELAY_SECONDS = 1.5
 
 # Max time to wait for the Discord webhook request before giving up.
 DISCORD_REQUEST_TIMEOUT_SECONDS = 10
+
+# --- tasks/donate_cards.py: donate_all_requested_cards() timing ---
+
+# Time for the Chat screen's sub-tab switch animation to settle after tapping
+# the Social nav icon, before capturing a screenshot to check for the Chat feed.
+CHAT_NAV_SETTLE_SECONDS = 1.5
+
+# Time for a single Donate tap's reward animation (+gold popup, progress bar
+# update) to finish before capturing a screenshot to re-check the request.
+DONATE_TAP_SETTLE_SECONDS = 1.2
+
+# Time for the feed-scroll swipe's animation to finish before re-scanning for
+# more donate requests.
+SCROLL_SETTLE_SECONDS = 1
