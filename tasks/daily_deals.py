@@ -12,8 +12,13 @@ SHOP_NAV_ICON = (130, 2340)
 FREE_SLOT_CENTER = (185, 1175)
 MAX_SHOP_NAV_ATTEMPTS = 3
 
+# Tapping the free slot opens a "Get X?" confirmation popup (even though it's
+# free) with its own FREE! button that must be tapped to actually claim it.
+CONFIRM_POPUP_BUTTON = (540, 1500)
+
 DAILY_DEALS_BANNER_TEMPLATE = "assets/templates/shop_daily_deals_banner.png"
 DAILY_DEAL_COLLECTED_BADGE_TEMPLATE = "assets/templates/daily_deal_collected_badge.png"
+DAILY_DEAL_CONFIRM_POPUP_TEMPLATE = "assets/templates/daily_deal_confirm_popup_button.png"
 
 
 def _go_to_daily_deals():
@@ -45,6 +50,12 @@ def claim_free_daily_card():
     ADBInterface.tap(*FREE_SLOT_CENTER)
     time.sleep(CLAIM_CONFIRM_DELAY_SECONDS)
     ADBInterface.capture_screen(config.SCREENSHOT_PATH)
+
+    if Detector.is_present(config.SCREENSHOT_PATH, DAILY_DEAL_CONFIRM_POPUP_TEMPLATE, config.THRESHOLD):
+        logger.info("Confirming claim in the popup...")
+        ADBInterface.tap(*CONFIRM_POPUP_BUTTON)
+        time.sleep(CLAIM_CONFIRM_DELAY_SECONDS)
+        ADBInterface.capture_screen(config.SCREENSHOT_PATH)
 
     if Detector.is_present(config.SCREENSHOT_PATH, DAILY_DEAL_COLLECTED_BADGE_TEMPLATE, config.THRESHOLD):
         logger.info("[V] Daily free card claimed.")
