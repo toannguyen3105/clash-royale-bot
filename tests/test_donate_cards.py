@@ -68,6 +68,10 @@ def test_donate_no_requests_gives_up_after_max_scrolls(mock_adb, mock_detector, 
 
     assert result == 0
     assert mock_adb.swipe.call_count == donate_cards.MAX_SCROLL_ATTEMPTS
+    # Regression guard: the feed anchors newest-at-bottom, so revealing older
+    # requests means swiping down (finger starts high, ends low), not up.
+    mock_adb.swipe.assert_called_with(*donate_cards.SCROLL_FROM, *donate_cards.SCROLL_TO)
+    assert donate_cards.SCROLL_FROM[1] < donate_cards.SCROLL_TO[1]
     mock_discord.assert_not_called()
 
 

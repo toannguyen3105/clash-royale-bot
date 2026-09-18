@@ -26,9 +26,13 @@ DONATE_DISABLED_OFFSET = (590, 104)
 # on the true disabled button scores 1.0, green buttons score ~0.86.
 DONATE_DISABLED_THRESHOLD = 0.95
 
-# Swipe gesture used to scroll the feed down (reveal further/older requests).
-SCROLL_FROM = (540, 2000)
-SCROLL_TO = (540, 700)
+# Swipe gesture used to scroll the feed. The "New Messages" feed anchors to the
+# newest content at the bottom (like a normal chat thread), so revealing older
+# requests further up the history means swiping down (finger starts high on
+# screen, drags toward the bottom) -- not up, which is a common intuition trap
+# since it does nothing here (there's nothing "newer" to reveal).
+SCROLL_FROM = (540, 700)
+SCROLL_TO = (540, 2000)
 MAX_SCROLL_ATTEMPTS = 5
 
 # Safety cap: give up on a single request after this many taps if neither the
