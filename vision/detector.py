@@ -35,7 +35,7 @@ class Detector:
         return sorted(kept, key=lambda p: p[1])
 
     @staticmethod
-    def match_template(screen_path, template_path, threshold=0.8):
+    def match_template(screen_path, template_path):
         """Find a template image in the screenshot and return max match value."""
         if not os.path.exists(template_path):
             logger.error(f"Template file not found at {template_path}")
@@ -58,4 +58,4 @@ class Detector:
     @staticmethod
     def is_present(screen_path, template_path, threshold=0.8):
         """Check if a template exists on the screen above the threshold."""
-        return Detector.match_template(screen_path, template_path, threshold) >= threshold
+        return Detector.match_template(screen_path, template_path) >= threshold
