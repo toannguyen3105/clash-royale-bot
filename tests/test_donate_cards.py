@@ -12,6 +12,7 @@ def mock_adb():
 @pytest.fixture
 def mock_detector():
     with patch("tasks.donate_cards.Detector") as mock:
+        mock.is_gray_region.return_value = False  # Donate button looks active (green) unless a test says otherwise
         yield mock
 
 
@@ -196,3 +197,24 @@ def test_donate_hits_safety_cap_when_request_never_completes(mock_adb, mock_dete
 
     assert result == donate_cards.MAX_TAPS_PER_REQUEST
     mock_discord.assert_called_once()
+
+
+def test_donate_skips_request_when_button_gray_but_template_misses(mock_adb, mock_detector, mock_discord):
+    """Test a grayed-out Donate button is still detected by color when the disabled
+    template can't match (e.g. the chat's scroll-down arrow overlaps the button),
+    instead of tapping it until the safety cap."""
+    banner = (150, 1824)
+    mock_detector.find_all.side_effect = _find_all_by_template(
+        banner_calls=[[banner]],
+        default_banner=[banner],  # the request stays in the feed
+        default_disabled=[],  # template never matches
+    )
+    mock_detector.is_gray_region.side_effect = [False, True]  # active for 1 tap, then grayed out
+
+    result = donate_cards.donate_all_requested_cards()
+
+    assert result == 2
+    tapped_points = [call.args for call in mock_adb.tap.call_args_list]
+    assert tapped_points.count((840, 1969)) == 2
+    center_checked = mock_detector.is_gray_region.call_args.args[1]
+    assert center_checked == (840, 1969)

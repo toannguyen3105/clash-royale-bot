@@ -59,3 +59,21 @@ class Detector:
     def is_present(screen_path, template_path, threshold=0.8):
         """Check if a template exists on the screen above the threshold."""
         return Detector.match_template(screen_path, template_path) >= threshold
+
+    @staticmethod
+    def is_gray_region(screen_path, center, half_size, max_channel_spread):
+        """Check whether the area around `center` (half_size = (half_w, half_h)) is
+        colorless: its mean B, G and R differ by at most `max_channel_spread`.
+        Useful where a button's state is shown by color alone (e.g. grayed out)."""
+        screen = cv2.imread(screen_path)
+        if screen is None:
+            logger.error(f"Could not read image from {screen_path}")
+            return False
+
+        (cx, cy), (hw, hh) = center, half_size
+        region = screen[max(0, cy - hh):cy + hh, max(0, cx - hw):cx + hw]
+        if region.size == 0:
+            return False
+
+        mean_bgr = region.reshape(-1, 3).mean(axis=0)
+        return float(mean_bgr.max() - mean_bgr.min()) <= max_channel_spread

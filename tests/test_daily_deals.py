@@ -46,6 +46,19 @@ def _is_present_sequenced(**template_sequences):
     return side_effect
 
 
+# Where the popup's FREE! button / close-X templates match, and the centers that should be tapped.
+POPUP_BUTTON_MATCH = (380, 1553)
+POPUP_BUTTON_CENTER = (540, 1613)
+POPUP_CLOSE_MATCH = (920, 870)
+POPUP_CLOSE_CENTER = (965, 900)
+
+
+def _find_all_by_template(**matches):
+    """Build a find_all(screen, template_path, threshold) side_effect returning a
+    fixed match list per template (empty for any template not listed)."""
+    return lambda screen_path, template_path, threshold: matches.get(template_path, [])
+
+
 def test_claim_free_daily_card_already_claimed(mock_adb, mock_detector, mock_discord):
     """Test claim_free_daily_card when the free slot was already collected today."""
     mock_detector.is_present.side_effect = _is_present_sequenced(**{
@@ -60,7 +73,7 @@ def test_claim_free_daily_card_already_claimed(mock_adb, mock_detector, mock_dis
     # Only the Shop nav tap should happen, never a tap on the free slot itself.
     tapped_points = [call.args for call in mock_adb.tap.call_args_list]
     assert daily_deals.FREE_SLOT_CENTER not in tapped_points
-    assert daily_deals.CONFIRM_POPUP_BUTTON not in tapped_points
+    assert POPUP_BUTTON_CENTER not in tapped_points
 
 
 def test_claim_free_daily_card_success_with_confirm_popup(mock_adb, mock_detector, mock_discord):
@@ -69,7 +82,10 @@ def test_claim_free_daily_card_success_with_confirm_popup(mock_adb, mock_detecto
     mock_detector.is_present.side_effect = _is_present_sequenced(**{
         daily_deals.DAILY_DEALS_BANNER_TEMPLATE: [True],
         daily_deals.DAILY_DEAL_COLLECTED_BADGE_TEMPLATE: [False, True],
-        daily_deals.DAILY_DEAL_CONFIRM_POPUP_TEMPLATE: [True],
+    })
+    mock_detector.find_all.side_effect = _find_all_by_template(**{
+        daily_deals.DAILY_DEAL_CONFIRM_POPUP_TEMPLATE: [POPUP_BUTTON_MATCH],
+        daily_deals.DAILY_DEAL_POPUP_CLOSE_BUTTON_TEMPLATE: [POPUP_CLOSE_MATCH],
     })
 
     result = daily_deals.claim_free_daily_card()
@@ -78,7 +94,9 @@ def test_claim_free_daily_card_success_with_confirm_popup(mock_adb, mock_detecto
     mock_discord.assert_called_once()
     tapped_points = [call.args for call in mock_adb.tap.call_args_list]
     assert daily_deals.FREE_SLOT_CENTER in tapped_points
-    assert daily_deals.CONFIRM_POPUP_BUTTON in tapped_points
+    assert POPUP_BUTTON_CENTER in tapped_points
+    # The popup stays open showing "Purchased!" and must be closed to reveal the badge.
+    assert tapped_points[-1] == POPUP_CLOSE_CENTER
 
 
 def test_claim_free_daily_card_success_without_confirm_popup(mock_adb, mock_detector, mock_discord):
@@ -86,15 +104,15 @@ def test_claim_free_daily_card_success_without_confirm_popup(mock_adb, mock_dete
     mock_detector.is_present.side_effect = _is_present_sequenced(**{
         daily_deals.DAILY_DEALS_BANNER_TEMPLATE: [True],
         daily_deals.DAILY_DEAL_COLLECTED_BADGE_TEMPLATE: [False, True],
-        daily_deals.DAILY_DEAL_CONFIRM_POPUP_TEMPLATE: [False],
     })
+    mock_detector.find_all.return_value = []
 
     result = daily_deals.claim_free_daily_card()
 
     assert result is True
     tapped_points = [call.args for call in mock_adb.tap.call_args_list]
     assert daily_deals.FREE_SLOT_CENTER in tapped_points
-    assert daily_deals.CONFIRM_POPUP_BUTTON not in tapped_points
+    assert POPUP_BUTTON_CENTER not in tapped_points
 
 
 def test_claim_free_daily_card_tap_unconfirmed(mock_adb, mock_detector, mock_discord):
@@ -103,7 +121,10 @@ def test_claim_free_daily_card_tap_unconfirmed(mock_adb, mock_detector, mock_dis
     mock_detector.is_present.side_effect = _is_present_sequenced(**{
         daily_deals.DAILY_DEALS_BANNER_TEMPLATE: [True],
         daily_deals.DAILY_DEAL_COLLECTED_BADGE_TEMPLATE: [False, False],
-        daily_deals.DAILY_DEAL_CONFIRM_POPUP_TEMPLATE: [True],
+    })
+    mock_detector.find_all.side_effect = _find_all_by_template(**{
+        daily_deals.DAILY_DEAL_CONFIRM_POPUP_TEMPLATE: [POPUP_BUTTON_MATCH],
+        daily_deals.DAILY_DEAL_POPUP_CLOSE_BUTTON_TEMPLATE: [POPUP_CLOSE_MATCH],
     })
 
     result = daily_deals.claim_free_daily_card()
@@ -121,3 +142,12 @@ def test_claim_free_daily_card_navigation_fails(mock_adb, mock_detector, mock_di
     assert result is False
     mock_discord.assert_not_called()
     assert mock_adb.tap.call_count == daily_deals.MAX_SHOP_NAV_ATTEMPTS
+
+
+def test_go_to_daily_deals_does_not_tap_when_already_there(mock_adb, mock_detector):
+    """Test go_to_daily_deals doesn't tap Shop if Daily Deals is already showing --
+    another tap would jump to the next Shop section, away from it."""
+    mock_detector.is_present.return_value = True
+
+    assert daily_deals.go_to_daily_deals() is True
+    mock_adb.tap.assert_not_called()

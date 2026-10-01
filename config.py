@@ -14,6 +14,8 @@ class Config:
     DEVICE_SERIAL = os.getenv("DEVICE_SERIAL", "")
     DEVICE_PIN = os.getenv("DEVICE_PIN", "")
     DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+    MAX_GOLD_PRICE = int(os.getenv("MAX_GOLD_PRICE", 2000))
+    RESTART_APP_ON_START = os.getenv("RESTART_APP_ON_START", "true").strip().lower() in ("1", "true", "yes", "on")
 
 # Global config instance
 config = Config()
