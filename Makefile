@@ -7,7 +7,7 @@ SCREENSHOT_DIR = assets/debug
 SCREENSHOT_FILE = $(SCREENSHOT_DIR)/screen.png
 TEST_DIR = tests/
 
-.PHONY: setup run screenshot test clean
+.PHONY: setup run daily donate history schedule unschedule schedule-status screenshot test clean
 
 # 1. Environment Setup
 setup:
@@ -20,10 +20,30 @@ setup:
 	@$(PIP) install -r requirements.txt
 	@echo "[V] Setup complete!"
 
-# 2. Run Bot
+# 2. Run Bot (all tasks), or just one command
 run:
 	@echo "[+] Starting Clash Royale Bot..."
 	@$(PYTHON) main.py
+
+daily:
+	@$(PYTHON) main.py daily
+
+donate:
+	@$(PYTHON) main.py donate
+
+# Recent runs and their outcomes (from ~/.clash-royale-bot/runs.jsonl); N=50 for more
+history:
+	@$(PYTHON) scripts/history.py $(or $(N),20)
+
+# 2.1. Scheduling (macOS launchd): daily at 10:00 (+15:00 retry), donate hourly 09-17
+schedule:
+	@$(PYTHON) scripts/schedule.py install
+
+unschedule:
+	@$(PYTHON) scripts/schedule.py uninstall
+
+schedule-status:
+	@$(PYTHON) scripts/schedule.py status
 
 # 3. Environment Check
 test:

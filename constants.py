@@ -61,3 +61,16 @@ DONATE_TAP_SETTLE_SECONDS = 1.2
 # Time for the feed-scroll swipe's animation to finish before re-scanning for
 # more donate requests.
 SCROLL_SETTLE_SECONDS = 1
+
+# --- utils/state.py: once-per-day task tracking ---
+
+# Local hour at which the game's daily content (Daily Deals) resets. Observed on
+# 2026-10-01: at 10:05 (UTC+7) the Shop said "New cards will appear in 13h 54min",
+# i.e. a reset at ~00:00 local time.
+DAILY_RESET_HOUR = 0
+
+# --- main.py: donate command ---
+
+# Upper bound (minutes) of the random delay a scheduled donate run waits before
+# starting, so runs don't fire at the exact same clock time every day.
+DEFAULT_DONATE_JITTER_MINUTES = 20

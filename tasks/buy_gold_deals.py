@@ -2,7 +2,6 @@ import time
 from core.adb import ADBInterface
 from vision.detector import Detector
 from utils.logger import logger
-from utils.discord import send_discord_message
 from config import config
 from constants import CLAIM_CONFIRM_DELAY_SECONDS
 from tasks.daily_deals import go_to_daily_deals
@@ -148,9 +147,9 @@ def _confirm_or_cancel_popup(price, price_pos):
 def buy_gold_daily_deals():
     """Buy every Daily Deals slot confirmed to be gold-priced (never gem-priced)
     at or under config.MAX_GOLD_PRICE. Returns the list of prices successfully
-    bought."""
+    bought (possibly empty), or None if the Daily Deals screen couldn't be reached."""
     if not go_to_daily_deals():
-        return []
+        return None
 
     bought = []
     handled = []  # price-text positions already bought, or skipped as ambiguous
@@ -171,9 +170,5 @@ def buy_gold_daily_deals():
         if _confirm_or_cancel_popup(price, price_pos):
             logger.info(f"[V] Bought a {price}-gold Daily Deals slot.")
             bought.append(price)
-
-    if bought:
-        items_list = ", ".join(f"{p} gold" for p in bought)
-        send_discord_message(f"Bought {len(bought)} Daily Deals item(s): {items_list}")
 
     return bought
