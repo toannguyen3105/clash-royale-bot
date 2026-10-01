@@ -4,6 +4,7 @@ from core.adb import ADBInterface
 from utils.logger import logger
 from tasks.navigation import ensure_at_lobby
 from tasks.daily_deals import claim_free_daily_card
+from tasks.buy_gold_deals import buy_gold_daily_deals
 from tasks.donate_cards import donate_all_requested_cards
 
 def main():
@@ -20,7 +21,10 @@ def main():
         return False
 
     # 1. Launch the game
-    # This also handles device unlocking
+    # This also handles device unlocking. Force-stopping first (unless disabled)
+    # makes it cold-start at the Lobby rather than resume a previous run's screen.
+    if config.RESTART_APP_ON_START:
+        ADBInterface.force_stop_app(config.PACKAGE_NAME)
     ADBInterface.launch_app(config.PACKAGE_NAME)
 
     # 2. Verify target screen (Lobby), backing out of other screens if needed
@@ -32,6 +36,9 @@ def main():
 
     # 3. Claim the free Daily Deals card, if available
     claim_free_daily_card()
+
+    # 3.1. Buy gold-priced Daily Deals at or under MAX_GOLD_PRICE (never gem-priced)
+    buy_gold_daily_deals()
 
     # 4. Donate to clanmates' pending card requests
     donate_all_requested_cards()

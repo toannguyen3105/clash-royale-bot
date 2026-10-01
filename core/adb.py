@@ -105,6 +105,12 @@ class ADBInterface:
             time.sleep(POST_PIN_ENTRY_DELAY_SECONDS)
 
     @staticmethod
+    def force_stop_app(package_name):
+        """Fully stop the app, so the next launch_app() cold-starts it."""
+        logger.info(f"Force-stopping {package_name} for a clean start...")
+        subprocess.run(ADBInterface._base_cmd() + ["shell", "am", "force-stop", package_name], capture_output=True)
+
+    @staticmethod
     def launch_app(package_name):
         ADBInterface.unlock_device()
 

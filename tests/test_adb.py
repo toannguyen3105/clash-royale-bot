@@ -251,3 +251,9 @@ def test_swipe_custom_duration(mock_subprocess):
     ADBInterface.swipe(100, 200, 300, 400, duration_ms=800)
 
     mock_subprocess.assert_called_with(["adb", "shell", "input", "swipe", "100", "200", "300", "400", "800"])
+
+
+def test_force_stop_app(mock_subprocess):
+    """Test force_stop_app issues an am force-stop for the package."""
+    ADBInterface.force_stop_app("com.supercell.clashroyale")
+    mock_subprocess.assert_called_once_with(["adb", "shell", "am", "force-stop", "com.supercell.clashroyale"], capture_output=True)
