@@ -257,3 +257,15 @@ def test_force_stop_app(mock_subprocess):
     """Test force_stop_app issues an am force-stop for the package."""
     ADBInterface.force_stop_app("com.supercell.clashroyale")
     mock_subprocess.assert_called_once_with(["adb", "shell", "am", "force-stop", "com.supercell.clashroyale"], capture_output=True)
+
+
+def test_turn_screen_off_presses_power_when_screen_on(mock_subprocess):
+    mock_subprocess.return_value = MagicMock(stdout="mScreenState=ON")
+    ADBInterface.turn_screen_off()
+    mock_subprocess.assert_called_with(["adb", "shell", "input", "keyevent", "26"])
+
+
+def test_turn_screen_off_does_nothing_when_already_off(mock_subprocess):
+    mock_subprocess.return_value = MagicMock(stdout="mScreenState=OFF")
+    ADBInterface.turn_screen_off()
+    assert mock_subprocess.call_count == 1  # only the dumpsys check, no power press

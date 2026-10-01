@@ -35,12 +35,6 @@ def mock_detector():
 
 
 @pytest.fixture
-def mock_discord():
-    with patch("tasks.buy_gold_deals.send_discord_message") as mock:
-        yield mock
-
-
-@pytest.fixture
 def mock_go_to_daily_deals():
     with patch("tasks.buy_gold_deals.go_to_daily_deals", return_value=True) as mock:
         yield mock
@@ -66,24 +60,22 @@ def world(mock_detector):
     return w
 
 
-def test_buy_gold_deals_navigation_fails(mock_adb, mock_detector, mock_discord):
+def test_buy_gold_deals_navigation_fails(mock_adb, mock_detector):
     """Test buy_gold_daily_deals when the Daily Deals screen is never reached."""
     with patch("tasks.buy_gold_deals.go_to_daily_deals", return_value=False):
         result = bgd.buy_gold_daily_deals()
 
-    assert result == []
-    mock_discord.assert_not_called()
+    assert result is None  # distinct from [] ("reached the screen, nothing to buy")
 
 
-def test_buy_gold_deals_no_slots_found(mock_adb, mock_go_to_daily_deals, mock_discord, world):
+def test_buy_gold_deals_no_slots_found(mock_adb, mock_go_to_daily_deals, world):
     """Test buy_gold_daily_deals when nothing gold-priced is visible."""
     result = bgd.buy_gold_daily_deals()
 
     assert result == []
-    mock_discord.assert_not_called()
 
 
-def test_buy_gold_deals_success(mock_adb, mock_go_to_daily_deals, mock_discord, world):
+def test_buy_gold_deals_success(mock_adb, mock_go_to_daily_deals, world):
     """Test buy_gold_daily_deals buys a confirmed gold-priced slot end to end."""
     price_pos = (100, 100)
     grid_gold_icon = (price_pos[0] + bgd.PRICE_TO_ICON_OFFSET[0], price_pos[1] + bgd.PRICE_TO_ICON_OFFSET[1])
@@ -97,7 +89,6 @@ def test_buy_gold_deals_success(mock_adb, mock_go_to_daily_deals, mock_discord, 
     result = bgd.buy_gold_daily_deals()
 
     assert result == [500]
-    mock_discord.assert_called_once()
     tapped_points = [call.args for call in mock_adb.tap.call_args_list]
     expected_slot_tap = (grid_gold_icon[0] + bgd.ICON_CENTER_OFFSET, grid_gold_icon[1] + bgd.ICON_CENTER_OFFSET)
     assert expected_slot_tap in tapped_points
@@ -105,7 +96,7 @@ def test_buy_gold_deals_success(mock_adb, mock_go_to_daily_deals, mock_discord, 
     assert expected_popup_tap in tapped_points
 
 
-def test_buy_gold_deals_success_despite_lingering_reward_popup(mock_adb, mock_go_to_daily_deals, mock_discord, world):
+def test_buy_gold_deals_success_despite_lingering_reward_popup(mock_adb, mock_go_to_daily_deals, world):
     """Regression test: a follow-up reward popup can show the same close-X style
     as the confirm popup after a successful purchase. That must not be read as
     "still failed" -- the 'Purchased!' badge on the slot is the real signal."""
@@ -123,10 +114,9 @@ def test_buy_gold_deals_success_despite_lingering_reward_popup(mock_adb, mock_go
     result = bgd.buy_gold_daily_deals()
 
     assert result == [500]
-    mock_discord.assert_called_once()
 
 
-def test_buy_gold_deals_treats_missing_badge_as_failure(mock_adb, mock_go_to_daily_deals, mock_discord, world):
+def test_buy_gold_deals_treats_missing_badge_as_failure(mock_adb, mock_go_to_daily_deals, world):
     """Test buy_gold_daily_deals reports failure (not a false success) if the
     'Purchased!' badge never shows up after confirming."""
     price_pos = (100, 100)
@@ -141,10 +131,9 @@ def test_buy_gold_deals_treats_missing_badge_as_failure(mock_adb, mock_go_to_dai
     result = bgd.buy_gold_daily_deals()
 
     assert result == []
-    mock_discord.assert_not_called()
 
 
-def test_buy_gold_deals_cancels_when_popup_shows_gem(mock_adb, mock_go_to_daily_deals, mock_discord, world):
+def test_buy_gold_deals_cancels_when_popup_shows_gem(mock_adb, mock_go_to_daily_deals, world):
     """Test buy_gold_daily_deals cancels (never confirms) if the popup that opens
     shows a gem icon instead of gold -- the critical never-buy-gem safety net."""
     price_pos = (100, 100)
@@ -160,13 +149,12 @@ def test_buy_gold_deals_cancels_when_popup_shows_gem(mock_adb, mock_go_to_daily_
     result = bgd.buy_gold_daily_deals()
 
     assert result == []
-    mock_discord.assert_not_called()
     tapped_points = [call.args for call in mock_adb.tap.call_args_list]
     assert popup_gem_icon not in tapped_points  # never taps a gem-confirming button
     assert (close_button_pos[0] + 45, close_button_pos[1] + 30) in tapped_points
 
 
-def test_buy_gold_deals_skips_price_above_cap(mock_adb, mock_go_to_daily_deals, mock_discord, world):
+def test_buy_gold_deals_skips_price_above_cap(mock_adb, mock_go_to_daily_deals, world):
     """Test buy_gold_daily_deals never even attempts a slot priced above MAX_GOLD_PRICE."""
     price_pos = (100, 100)
     grid_gold_icon = (price_pos[0] + bgd.PRICE_TO_ICON_OFFSET[0], price_pos[1] + bgd.PRICE_TO_ICON_OFFSET[1])
@@ -178,11 +166,10 @@ def test_buy_gold_deals_skips_price_above_cap(mock_adb, mock_go_to_daily_deals, 
     result = bgd.buy_gold_daily_deals()
 
     assert result == []
-    mock_discord.assert_not_called()
     mock_adb.tap.assert_not_called()
 
 
-def test_buy_gold_deals_skips_ambiguous_currency_icon(mock_adb, mock_go_to_daily_deals, mock_discord, world):
+def test_buy_gold_deals_skips_ambiguous_currency_icon(mock_adb, mock_go_to_daily_deals, world):
     """Test buy_gold_daily_deals skips a price match with no confirming gold icon
     nearby, rather than guessing it's safe to buy."""
     price_pos = (100, 100)
@@ -194,5 +181,4 @@ def test_buy_gold_deals_skips_ambiguous_currency_icon(mock_adb, mock_go_to_daily
     result = bgd.buy_gold_daily_deals()
 
     assert result == []
-    mock_discord.assert_not_called()
     mock_adb.tap.assert_not_called()

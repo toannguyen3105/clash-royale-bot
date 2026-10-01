@@ -82,10 +82,21 @@ class ADBInterface:
         return False
 
     @staticmethod
+    def is_screen_on():
+        res = subprocess.run(ADBInterface._base_cmd() + ["shell", "dumpsys", "display"], capture_output=True, text=True)
+        return not ("mScreenState=OFF" in res.stdout or "state=OFF" in res.stdout)
+
+    @staticmethod
+    def turn_screen_off():
+        """Turn the screen off (which also re-locks the device), if it's on."""
+        if ADBInterface.is_screen_on():
+            logger.info("Turning the screen off...")
+            subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "keyevent", KEYCODE_POWER])
+
+    @staticmethod
     def unlock_device():
         logger.info("Checking screen state...")
-        res = subprocess.run(ADBInterface._base_cmd() + ["shell", "dumpsys", "display"], capture_output=True, text=True)
-        if "mScreenState=OFF" in res.stdout or "state=OFF" in res.stdout:
+        if not ADBInterface.is_screen_on():
             logger.info("Screen is OFF. Pressing Power button...")
             subprocess.run(ADBInterface._base_cmd() + ["shell", "input", "keyevent", KEYCODE_POWER])
             time.sleep(POST_POWER_BUTTON_DELAY_SECONDS)

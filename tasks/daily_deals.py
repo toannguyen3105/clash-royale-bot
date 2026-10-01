@@ -2,7 +2,6 @@ import time
 from core.adb import ADBInterface
 from vision.detector import Detector
 from utils.logger import logger
-from utils.discord import send_discord_message
 from config import config
 from constants import SHOP_NAV_SETTLE_SECONDS, CLAIM_CONFIRM_DELAY_SECONDS
 
@@ -55,14 +54,15 @@ def go_to_daily_deals():
 
 
 def claim_free_daily_card():
-    """Claim the free card slot in Market > Daily Deals, if not already claimed today."""
+    """Claim the free card slot in Market > Daily Deals, if not already claimed today.
+    Returns True once today's free card is collected (claimed now, or already
+    earlier), False if that couldn't be confirmed."""
     if not go_to_daily_deals():
         return False
 
     if Detector.is_present(config.SCREENSHOT_PATH, DAILY_DEAL_COLLECTED_BADGE_TEMPLATE, config.THRESHOLD):
         logger.info("Daily free card already claimed today.")
-        send_discord_message("The free Daily Deals card has already been claimed today.")
-        return False
+        return True
 
     logger.info("Claiming free daily card...")
     ADBInterface.tap(*FREE_SLOT_CENTER)
@@ -86,7 +86,6 @@ def claim_free_daily_card():
 
     if Detector.is_present(config.SCREENSHOT_PATH, DAILY_DEAL_COLLECTED_BADGE_TEMPLATE, config.THRESHOLD):
         logger.info("[V] Daily free card claimed.")
-        send_discord_message("Claimed the free Daily Deals card for today!")
         return True
 
     logger.error("Tapped the free slot but could not confirm it was claimed.")

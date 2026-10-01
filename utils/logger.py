@@ -1,16 +1,25 @@
 import logging
+import logging.handlers
 import sys
 import os
+from config import config
+from utils.app_home import ensure_app_home, is_inside_app_home
+
+# Rotate at ~1MB, keeping 5 old files, so an unattended scheduled bot can't
+# grow the log without bound.
+LOG_MAX_BYTES = 1_000_000
+LOG_BACKUP_COUNT = 5
 
 def setup_logger(name="bot", level=logging.INFO):
-    """Set up logger based on the LOG_FILE environment variable."""
-    # Get log file path from .env, default to logs/bot.log
-    log_file = os.getenv("LOG_FILE", "logs/bot.log")
-    
-    # Ensure the log directory exists
+    """Set up logger based on the LOG_FILE environment variable (default: under APP_HOME)."""
+    log_file = os.getenv("LOG_FILE", config.LOG_FILE)
+
+    # Ensure the log directory exists (APP_HOME locked down first if it's inside it)
     log_dir = os.path.dirname(log_file)
-    if log_dir and not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    if log_dir:
+        if is_inside_app_home(log_dir):
+            ensure_app_home()
+        os.makedirs(log_dir, exist_ok=True)
 
     logger = logging.getLogger(name)
     
@@ -31,7 +40,9 @@ def setup_logger(name="bot", level=logging.INFO):
 
     # File handler
     try:
-        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_file, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUP_COUNT, encoding='utf-8'
+        )
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     except Exception as e:
