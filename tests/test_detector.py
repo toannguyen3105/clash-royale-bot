@@ -66,3 +66,24 @@ def test_find_all_missing_template_file_returns_empty_list(tmp_path):
     matches = Detector.find_all(screen_path, "does/not/exist.png", threshold=0.9)
 
     assert matches == []
+
+
+def _make_two_tone_screen(tmp_path):
+    screen = np.zeros((100, 200, 3), dtype=np.uint8)
+    screen[:, :100] = (160, 160, 160)  # gray (BGR)
+    screen[:, 100:] = (146, 173, 144)  # green (BGR)
+    path = str(tmp_path / "two_tone.png")
+    cv2.imwrite(path, screen)
+    return path
+
+
+def test_is_gray_region_true_for_gray_area(tmp_path):
+    """Test is_gray_region recognizes an area whose B, G and R are (nearly) equal."""
+    screen_path = _make_two_tone_screen(tmp_path)
+    assert Detector.is_gray_region(screen_path, (50, 50), (20, 10), 10) is True
+
+
+def test_is_gray_region_false_for_green_area(tmp_path):
+    """Test is_gray_region rejects a colored (green) area."""
+    screen_path = _make_two_tone_screen(tmp_path)
+    assert Detector.is_gray_region(screen_path, (150, 50), (20, 10), 10) is False

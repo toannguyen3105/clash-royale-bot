@@ -26,6 +26,17 @@ DONATE_DISABLED_OFFSET = (590, 104)
 # on the true disabled button scores 1.0, green buttons score ~0.86.
 DONATE_DISABLED_THRESHOLD = 0.95
 
+# Fallback for when that template can't match: the chat's blue scroll-down arrow
+# floats over the right edge of a request's Donate button near the bottom of the
+# feed, dropping the disabled template's score to ~0.87 (verified live), which
+# left the bot tapping a grayed-out button until MAX_TAPS_PER_REQUEST. The
+# button's center is never covered, and its color alone tells the state: a
+# disabled button averages B=G=R (~150-164), an active one has G ~27-34 above
+# R/B (verified live; the white "Donate" text dilutes the green, hence the
+# modest gap). The sampled area is the middle of the button, text included.
+DONATE_BUTTON_SAMPLE_HALF_SIZE = (60, 15)
+DONATE_DISABLED_MAX_CHANNEL_SPREAD = 10
+
 # Swipe gesture used to scroll the feed. The "New Messages" feed anchors to the
 # newest content at the bottom (like a normal chat thread), so revealing older
 # requests further up the history means swiping down (finger starts high on
@@ -88,7 +99,11 @@ def _donate_button_disabled(anchor):
     """Check whether the request at `anchor` has hit its donation cap (grayed-out button)."""
     expected = (anchor[0] + DONATE_DISABLED_OFFSET[0], anchor[1] + DONATE_DISABLED_OFFSET[1])
     matches = Detector.find_all(config.SCREENSHOT_PATH, DONATE_DISABLED_TEMPLATE, DONATE_DISABLED_THRESHOLD)
-    return any(_same_position(m, expected) for m in matches)
+    if any(_same_position(m, expected) for m in matches):
+        return True
+
+    button_center = (anchor[0] + DONATE_BUTTON_OFFSET[0], anchor[1] + DONATE_BUTTON_OFFSET[1])
+    return Detector.is_gray_region(config.SCREENSHOT_PATH, button_center, DONATE_BUTTON_SAMPLE_HALF_SIZE, DONATE_DISABLED_MAX_CHANNEL_SPREAD)
 
 
 def _dismiss_new_messages_modal():
